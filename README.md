@@ -17,6 +17,16 @@ boater get-blob ubuntu sha256:7b9b13f7b9c086adfb6be4d2d264f90f16b4d1d5b3ab9f955c
 ```
 
 ```
+$ boater get-manifest ubuntu -v 2>&1 | grep HTTP
+2017/06/14 00:32:10 > GET https://index.docker.io/v2/ HTTP/1.1
+2017/06/14 00:32:11 < HTTP/1.1 401 Unauthorized
+2017/06/14 00:32:11 > GET https://auth.docker.io/token?scope=repository%3Alibrary%2Fubuntu%3Apull&service=registry.docker.io HTTP/1.1
+2017/06/14 00:32:11 < HTTP/1.1 200 OK
+2017/06/14 00:32:11 > GET https://index.docker.io/v2/library/ubuntu/manifests/latest HTTP/1.1
+2017/06/14 00:32:12 < HTTP/1.1 200 OK
+```
+
+```
 $ mkdir -p ./ubuntu/blobs
 $ boater get-manifest ubuntu --accept-schema2 >./ubuntu/manifest
 $ for digest in $(jq -r '.config.digest, .layers[].digest' ./ubuntu/manifest); do
