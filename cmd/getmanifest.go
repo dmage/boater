@@ -83,5 +83,5 @@ func init() {
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptSchema1, "accept-schema1", false, "accept Schema 1 manifests")
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptSchema2, "accept-schema2", false, "accept Schema 2 manifests")
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptManifestList, "accept-manifest-list", false, "accept manifest lists")
-	getManifestCmd.Flags().StringArrayVarP(&getManifestOpts.MediaTypes, "mimetype", "t", nil, "accept manifests with a custom MIME type")
+	getManifestCmd.Flags().StringArrayVarP(&getManifestOpts.MediaTypes, "accept", "t", nil, "accept manifests with a custom media type")
 }
