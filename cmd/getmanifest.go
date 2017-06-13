@@ -24,9 +24,10 @@ import (
 )
 
 var getManifestOpts struct {
-	AcceptSchema1 bool
-	AcceptSchema2 bool
-	MediaTypes    []string
+	AcceptSchema1      bool
+	AcceptSchema2      bool
+	AcceptManifestList bool
+	MediaTypes         []string
 }
 
 var getManifestCmd = &cobra.Command{
@@ -57,6 +58,9 @@ to quickly create a Cobra application.`,
 		if getManifestOpts.AcceptSchema2 {
 			req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.v2+json")
 		}
+		if getManifestOpts.AcceptManifestList {
+			req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.list.v2+json")
+		}
 		for _, mediatype := range getManifestOpts.MediaTypes {
 			req.Header.Add("Accept", mediatype)
 		}
@@ -78,5 +82,6 @@ func init() {
 
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptSchema1, "accept-schema1", false, "accept Schema 1 manifests")
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptSchema2, "accept-schema2", false, "accept Schema 2 manifests")
+	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptManifestList, "accept-manifest-list", false, "accept manifest lists")
 	getManifestCmd.Flags().StringArrayVarP(&getManifestOpts.MediaTypes, "mimetype", "t", nil, "accept manifests with a custom MIME type")
 }
