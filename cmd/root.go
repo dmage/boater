@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"bufio"
 	"log"
 	"net/http"
 	"os"
@@ -43,12 +44,14 @@ func Execute() {
 
 var rootCmdUser string
 var rootCmdPassword string
+var rootCmdPasswordFile string
 var rootCmdInsecure bool
 var rootCmdVerbose bool
 
 func init() {
 	RootCmd.PersistentFlags().StringVarP(&rootCmdUser, "user", "u", "", "use the specified username")
 	RootCmd.PersistentFlags().StringVarP(&rootCmdPassword, "password", "p", "", "use the specified password")
+	RootCmd.PersistentFlags().StringVarP(&rootCmdPasswordFile, "password-file", "", "", "use the password found in the specified file")
 	RootCmd.PersistentFlags().BoolVar(&rootCmdInsecure, "insecure", false, "send requests using http")
 	RootCmd.PersistentFlags().BoolVarP(&rootCmdVerbose, "verbose", "v", false, "print http requests")
 }
@@ -61,7 +64,23 @@ func manifestName(named reference.Named) string {
 }
 
 func newCredentialStore() auth.CredentialStore {
-	if rootCmdUser != "" || rootCmdPassword != "" {
+	if rootCmdUser != "" || rootCmdPassword != "" || rootCmdPasswordFile != "" {
+		if rootCmdPassword == "" && rootCmdPasswordFile != "" {
+			file, err := os.Open(rootCmdPasswordFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			scanner := bufio.NewScanner(file)
+			if scanner.Scan() {
+				rootCmdPassword = scanner.Text()
+			}
+
+			if err := scanner.Err(); err != nil {
+				log.Fatal(err)
+			}
+			file.Close()
+		}
 		return &client.BasicCredentials{
 			Username: rootCmdUser,
 			Password: rootCmdPassword,
