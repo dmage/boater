@@ -115,6 +115,7 @@ func newTransport() http.RoundTripper {
 	if rootCmdVerbose {
 		rt = &httplog.RoundTripper{
 			RoundTripper: rt,
+			N:            256,
 		}
 	}
 	return rt
