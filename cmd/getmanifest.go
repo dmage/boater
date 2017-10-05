@@ -24,6 +24,7 @@ import (
 )
 
 var getManifestOpts struct {
+	AcceptKnown        bool
 	AcceptSchema1      bool
 	AcceptSchema2      bool
 	AcceptManifestList bool
@@ -52,13 +53,13 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatal(err)
 		}
-		if getManifestOpts.AcceptSchema1 {
+		if getManifestOpts.AcceptKnown || getManifestOpts.AcceptSchema1 {
 			req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.v1+json")
 		}
-		if getManifestOpts.AcceptSchema2 {
+		if getManifestOpts.AcceptKnown || getManifestOpts.AcceptSchema2 {
 			req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.v2+json")
 		}
-		if getManifestOpts.AcceptManifestList {
+		if getManifestOpts.AcceptKnown || getManifestOpts.AcceptManifestList {
 			req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.list.v2+json")
 		}
 		for _, mediatype := range getManifestOpts.MediaTypes {
@@ -70,6 +71,14 @@ to quickly create a Cobra application.`,
 		}
 		defer resp.Body.Close()
 
+		if resp.StatusCode != http.StatusOK {
+			_, err = io.Copy(os.Stderr, resp.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Fatal(resp.Status)
+		}
+
 		_, err = io.Copy(os.Stdout, resp.Body)
 		if err != nil {
 			log.Fatal(err)
@@ -80,6 +89,7 @@ to quickly create a Cobra application.`,
 func init() {
 	RootCmd.AddCommand(getManifestCmd)
 
+	getManifestCmd.Flags().BoolVarP(&getManifestOpts.AcceptKnown, "accept-known", "a", false, "accept known manifest types (Schema 1, Schema 2, and manifest lists; new types may be added in the future)")
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptSchema1, "accept-schema1", false, "accept Schema 1 manifests")
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptSchema2, "accept-schema2", false, "accept Schema 2 manifests")
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptManifestList, "accept-manifest-list", false, "accept manifest lists")
