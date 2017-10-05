@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/client/auth"
@@ -11,19 +12,39 @@ import (
 	"github.com/docker/distribution/registry/client/transport"
 )
 
+type aggregatedError []error
+
+func (e aggregatedError) Error() string {
+	s := make([]string, len(e))
+	for i, err := range e {
+		s[i] = err.Error()
+	}
+	return strings.Join(s, "; ")
+}
+
+type connectionType int
+
+const (
+	httpsConnection connectionType = iota
+	httpConnection
+)
+
+func (c connectionType) Scheme() string {
+	if c == httpConnection {
+		return "http"
+	}
+	return "https"
+}
+
 type Client struct {
 	named      reference.Named
 	insecure   bool
+	connection connectionType
 	transport  http.RoundTripper
 	httpClient *http.Client
 }
 
-func URL(insecure bool, host string, format string, a ...interface{}) string {
-	scheme := "https"
-	if insecure {
-		scheme = "http"
-	}
-
+func URL(scheme string, host string, format string, a ...interface{}) string {
 	if host == "docker.io" {
 		host = "index.docker.io"
 	}
@@ -44,9 +65,10 @@ func New(ref string, insecure bool, transport http.RoundTripper) (*Client, error
 	}
 
 	return &Client{
-		named:     named,
-		insecure:  insecure,
-		transport: transport,
+		named:      named,
+		insecure:   insecure,
+		connection: httpsConnection,
+		transport:  transport,
 		httpClient: &http.Client{
 			Transport: transport,
 		},
@@ -62,14 +84,14 @@ func (c *Client) Scope() string {
 }
 
 func (c *Client) URL(format string, a ...interface{}) string {
-	return URL(c.insecure, reference.Domain(c.named), format, a...)
+	return URL(c.connection.Scheme(), reference.Domain(c.named), format, a...)
 }
 
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	return c.httpClient.Do(req)
 }
 
-func (c *Client) Auth(creds auth.CredentialStore, scope string, actions ...string) error {
+func (c *Client) auth(creds auth.CredentialStore, scope string, actions ...string) error {
 	resp, err := c.httpClient.Get(c.URL("/v2/"))
 	if err != nil {
 		return fmt.Errorf("get challenges from /v2/: %s", err)
@@ -89,4 +111,22 @@ func (c *Client) Auth(creds auth.CredentialStore, scope string, actions ...strin
 	rt := transport.NewTransport(c.transport, authorizer)
 	c.httpClient.Transport = rt
 	return nil
+}
+
+func (c *Client) Auth(creds auth.CredentialStore, scope string, actions ...string) error {
+	connectionTypes := []connectionType{httpsConnection}
+	if c.insecure {
+		connectionTypes = append(connectionTypes, httpConnection)
+	}
+
+	var errs []error
+	for _, connection := range connectionTypes {
+		c.connection = connection
+		err := c.auth(creds, scope, actions...)
+		if err == nil {
+			return nil
+		}
+		errs = append(errs, err)
+	}
+	return aggregatedError(errs)
 }

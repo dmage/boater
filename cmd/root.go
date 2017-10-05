@@ -16,9 +16,12 @@ package cmd
 
 import (
 	"bufio"
+	"crypto/tls"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/client/auth"
@@ -90,10 +93,31 @@ func newCredentialStore() auth.CredentialStore {
 }
 
 func newTransport() http.RoundTripper {
-	if rootCmdVerbose {
-		return &httplog.RoundTripper{}
+	t := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
 	}
-	return nil
+	if rootCmdInsecure {
+		t.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	}
+
+	rt := http.RoundTripper(t)
+	if rootCmdVerbose {
+		rt = &httplog.RoundTripper{
+			RoundTripper: rt,
+		}
+	}
+	return rt
 }
 
 func newClient(ref string, actions []string) *client.Client {

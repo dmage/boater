@@ -50,7 +50,19 @@ to quickly create a Cobra application.`,
 			Transport: newTransport(),
 		}
 
-		resp, err := httpClient.Get(client.URL(rootCmdInsecure, host, "/v2/"))
+		schemes := []string{"https"}
+		if rootCmdInsecure {
+			schemes = append(schemes, "http")
+		}
+
+		var resp *http.Response
+		var err error
+		for _, scheme := range schemes {
+			resp, err = httpClient.Get(client.URL(scheme, host, "/v2/"))
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
 			log.Fatal(err)
 		}
