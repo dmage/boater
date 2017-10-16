@@ -15,12 +15,13 @@
 package cmd
 
 import (
-	"bufio"
 	"crypto/tls"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/docker/distribution/reference"
@@ -66,27 +67,29 @@ func manifestName(named reference.Named) string {
 	return reference.TagNameOnly(named).(reference.Tagged).Tag()
 }
 
-func newCredentialStore() auth.CredentialStore {
-	if rootCmdUser != "" || rootCmdPassword != "" || rootCmdPasswordFile != "" {
-		if rootCmdPassword == "" && rootCmdPasswordFile != "" {
-			file, err := os.Open(rootCmdPasswordFile)
-			if err != nil {
-				log.Fatal(err)
-			}
+func getPassword() (string, bool) {
+	if rootCmdPassword != "" {
+		return rootCmdPassword, true
+	}
 
-			scanner := bufio.NewScanner(file)
-			if scanner.Scan() {
-				rootCmdPassword = scanner.Text()
-			}
-
-			if err := scanner.Err(); err != nil {
-				log.Fatal(err)
-			}
-			file.Close()
+	if rootCmdPasswordFile != "" {
+		password, err := ioutil.ReadFile(rootCmdPasswordFile)
+		if err != nil {
+			log.Fatal(err)
 		}
+
+		return strings.TrimRight(string(password), "\r\n"), true
+	}
+
+	return "", false
+}
+
+func newCredentialStore() auth.CredentialStore {
+	password, havePassword := getPassword()
+	if rootCmdUser != "" || havePassword {
 		return &client.BasicCredentials{
 			Username: rootCmdUser,
-			Password: rootCmdPassword,
+			Password: password,
 		}
 	}
 	return nil

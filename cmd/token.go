@@ -101,8 +101,9 @@ to quickly create a Cobra application.`,
 			log.Fatal(err)
 		}
 
-		if rootCmdUser != "" || rootCmdPassword != "" {
-			userpass := fmt.Sprintf("%s:%s", rootCmdUser, rootCmdPassword)
+		password, havePassword := getPassword()
+		if rootCmdUser != "" || havePassword {
+			userpass := fmt.Sprintf("%s:%s", rootCmdUser, password)
 			token := base64.StdEncoding.EncodeToString([]byte(userpass))
 			req.Header.Add("Authorization", "Basic "+token)
 		}
