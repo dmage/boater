@@ -54,3 +54,7 @@ done
 boater put-manifest -u "$USER" -p "$PASSWORD" "$REPO" ./ubuntu/manifest \
     --content-type="application/vnd.docker.distribution.manifest.v2+json"
 ```
+
+### Alternatives
+
+  * [reg](https://github.com/genuinetools/reg)
