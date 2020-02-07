@@ -48,9 +48,12 @@ to quickly create a Cobra application.`,
 		}
 		defer resp.Body.Close()
 
-		_, err = io.Copy(os.Stdout, resp.Body)
-		if err != nil {
+		if _, err = io.Copy(os.Stdout, resp.Body); err != nil {
 			log.Fatal(err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			os.Exit(1)
 		}
 	},
 }
