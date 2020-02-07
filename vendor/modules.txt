@@ -1,9 +1,5 @@
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
-# github.com/dmage/boater v0.0.0-20180709083948-68568c2546c1
-github.com/dmage/boater/cmd
-github.com/dmage/boater/pkg/client
-github.com/dmage/boater/pkg/httplog
 # github.com/docker/distribution v2.7.1+incompatible
 github.com/docker/distribution
 github.com/docker/distribution/digestset
