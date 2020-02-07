@@ -89,7 +89,7 @@ to quickly create a Cobra application.`,
 
 		uri, err := url.Parse(loc)
 		if err != nil {
-			log.Fatal("unable to parse Location: %s", err)
+			log.Fatalf("unable to parse Location: %s", err)
 		}
 
 		if uri.RawQuery != "" {
