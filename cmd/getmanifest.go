@@ -27,6 +27,7 @@ var getManifestOpts struct {
 	AcceptKnown        bool
 	AcceptSchema1      bool
 	AcceptSchema2      bool
+	AcceptOCISchema    bool
 	AcceptManifestList bool
 	MediaTypes         []string
 }
@@ -62,6 +63,9 @@ to quickly create a Cobra application.`,
 		if getManifestOpts.AcceptKnown || getManifestOpts.AcceptManifestList {
 			req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.list.v2+json")
 		}
+		if getManifestOpts.AcceptKnown || getManifestOpts.AcceptOCISchema {
+			req.Header.Add("Accept", "application/vnd.oci.image.manifest.v1+json")
+		}
 		for _, mediatype := range getManifestOpts.MediaTypes {
 			req.Header.Add("Accept", mediatype)
 		}
@@ -92,6 +96,7 @@ func init() {
 	getManifestCmd.Flags().BoolVarP(&getManifestOpts.AcceptKnown, "accept-known", "a", false, "accept known manifest types (Schema 1, Schema 2, and manifest lists; new types may be added in the future)")
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptSchema1, "accept-schema1", false, "accept Schema 1 manifests")
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptSchema2, "accept-schema2", false, "accept Schema 2 manifests")
+	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptOCISchema, "accept-ocischema", false, "accept OCI Schema manifests")
 	getManifestCmd.Flags().BoolVar(&getManifestOpts.AcceptManifestList, "accept-manifest-list", false, "accept manifest lists")
 	getManifestCmd.Flags().StringArrayVarP(&getManifestOpts.MediaTypes, "accept", "t", nil, "accept manifests with a custom media type")
 }
