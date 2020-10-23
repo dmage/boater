@@ -16,10 +16,12 @@ package cmd
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -27,6 +29,7 @@ import (
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/client/auth"
 	"github.com/spf13/cobra"
+	"k8s.io/kubernetes/pkg/credentialprovider"
 
 	"github.com/dmage/boater/pkg/client"
 	"github.com/dmage/boater/pkg/httplog"
@@ -49,6 +52,7 @@ func Execute() {
 var rootCmdUser string
 var rootCmdPassword string
 var rootCmdPasswordFile string
+var rootCmdConfigJson string
 var rootCmdInsecure bool
 var rootCmdVerbose bool
 
@@ -56,6 +60,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&rootCmdUser, "user", "u", "", "use the specified username")
 	RootCmd.PersistentFlags().StringVarP(&rootCmdPassword, "password", "p", "", "use the specified password")
 	RootCmd.PersistentFlags().StringVarP(&rootCmdPasswordFile, "password-file", "", "", "use the password found in the specified file")
+	RootCmd.PersistentFlags().StringVarP(&rootCmdConfigJson, "config-json", "", "", "use credentials from the specified Docker config.json file")
 	RootCmd.PersistentFlags().BoolVar(&rootCmdInsecure, "insecure", false, "send requests using http")
 	RootCmd.PersistentFlags().BoolVarP(&rootCmdVerbose, "verbose", "v", false, "print http requests")
 }
@@ -84,20 +89,77 @@ func getPassword() (string, bool) {
 	return "", false
 }
 
-func newCredentialStore() auth.CredentialStore {
+func getCredentialsFromConfigJson(configJsonFile string, ref string) ([]credentialprovider.AuthConfig, error) {
+	f, err := os.Open(configJsonFile)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var dockerConfigJSON credentialprovider.DockerConfigJSON
+	err = json.NewDecoder(f).Decode(&dockerConfigJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	basicKeyring := &credentialprovider.BasicDockerKeyring{}
+	basicKeyring.Add(dockerConfigJSON.Auths)
+	creds, _ := basicKeyring.Lookup(ref)
+	return creds, nil
+}
+
+func newCredentialStore(ref string) auth.CredentialStore {
 	password, havePassword := getPassword()
 	if rootCmdUser != "" || havePassword {
+		if rootCmdVerbose {
+			log.Printf("Using credentials provided by command line arguments: %s:%s", rootCmdUser, password)
+		}
 		return &client.BasicCredentials{
 			Username: rootCmdUser,
 			Password: password,
 		}
 	}
+
+	if rootCmdConfigJson != "" {
+		if rootCmdVerbose {
+			log.Printf("Loading credentials from %s...", rootCmdConfigJson)
+		}
+		creds, err := getCredentialsFromConfigJson(rootCmdConfigJson, ref)
+		if err != nil {
+			log.Fatalf("unable to load credentials from %s: %s", rootCmdConfigJson, err)
+		}
+		if len(creds) > 0 {
+			if rootCmdVerbose {
+				log.Printf("Using credentials from config.json: %s:%s", creds[0].Username, creds[0].Password)
+			}
+			return &client.BasicCredentials{
+				Username: creds[0].Username,
+				Password: creds[0].Password,
+			}
+		}
+	}
+
+	if rootCmdVerbose {
+		log.Println("No credentials are found, proceeding as anonymous...")
+	}
+
 	return nil
+}
+
+func ProxyFromEnvironment(req *http.Request) (*url.URL, error) {
+	u, err := http.ProxyFromEnvironment(req)
+	if u == nil || err != nil {
+		return u, err
+	}
+	if rootCmdVerbose {
+		log.Printf("Using proxy for %s: %s", req.URL, u)
+	}
+	return u, nil
 }
 
 func newTransport() http.RoundTripper {
 	t := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy: ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -125,7 +187,7 @@ func newTransport() http.RoundTripper {
 }
 
 func newClient(ref string, actions []string) *client.Client {
-	creds := newCredentialStore()
+	creds := newCredentialStore(ref)
 	transport := newTransport()
 
 	client, err := client.New(ref, rootCmdInsecure, transport)
