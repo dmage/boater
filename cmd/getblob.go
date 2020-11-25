@@ -26,12 +26,12 @@ import (
 var getBlobCmd = &cobra.Command{
 	Use:   "get-blob <imagename> <digest>",
 	Short: "Get a blob for an image",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `Get a blob from an image repository.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Examples:
+  # Get the blob from the repository busybox.
+  boater get-blob busybox sha256:dc3bacd8b5ea796cea5d6070c8f145df9076f26a6bc1c8981fd5b176d37de843
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 2 {
 			cmd.Usage()

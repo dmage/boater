@@ -33,12 +33,15 @@ var putBlobOpts struct {
 var putBlobCmd = &cobra.Command{
 	Use:   "put-blob <imagename> <filename>",
 	Short: "Put a blob for an image",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `Put a blob into an image repository.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Examples:
+  # Put the layer blob into the repository.
+  boater --config-json ~/.docker/config.json put-blob docker.io/dmage/foo ./layer.tar.gz
+
+  # Put the blob from stdin into the repository.
+  printf '{}' | boater --config-json ~/.docker/config.json put-blob docker.io/dmage/foo /dev/stdin --digest=sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 2 {
 			cmd.Usage()
@@ -120,5 +123,5 @@ to quickly create a Cobra application.`,
 func init() {
 	RootCmd.AddCommand(putBlobCmd)
 
-	putBlobCmd.Flags().StringVar(&putBlobOpts.Digest, "digest", "", "...")
+	putBlobCmd.Flags().StringVar(&putBlobOpts.Digest, "digest", "", "use the specified digest (if not specified, the file will be read twice)")
 }

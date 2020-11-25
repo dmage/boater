@@ -31,12 +31,12 @@ import (
 var tokenCmd = &cobra.Command{
 	Use:   "token <hostname> [<scope1>,<scope2>,...]",
 	Short: "Get a token",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `Get a bearer token from a registry.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Examples:
+  # Get a token from docker.io for docker.io/library/busybox.
+  boater token docker.io repository:library/busybox:pull
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			cmd.Usage()

@@ -7,6 +7,8 @@ require (
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7
 	github.com/spf13/cobra v1.0.0
+	github.com/spf13/pflag v1.0.5
+	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	k8s.io/kubernetes v1.19.3
 )
 

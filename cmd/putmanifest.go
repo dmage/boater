@@ -35,12 +35,12 @@ var putManifestOpts struct {
 var putManifestCmd = &cobra.Command{
 	Use:   "put-manifest <imagename>[:<tag>|@<digest>] <filename>",
 	Short: "Put a manifest for an image",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `Put an image manifest into a registry.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Examples:
+  # Put the manifest into the repository.
+  boater --config-json ~/.docker/config.json put-manifest docker.io/dmage/foo:latest ./manifest.json --content-type="application/vnd.docker.distribution.manifest.v2+json"
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 2 {
 			cmd.Usage()
@@ -114,6 +114,6 @@ to quickly create a Cobra application.`,
 func init() {
 	RootCmd.AddCommand(putManifestCmd)
 
-	putManifestCmd.Flags().BoolVarP(&putManifestOpts.JSONSignature, "json-signature", "s", false, "...")
-	putManifestCmd.Flags().StringVarP(&putManifestOpts.MediaType, "content-type", "t", "application/vnd.docker.distribution.manifest.v1+json", "...")
+	putManifestCmd.Flags().BoolVarP(&putManifestOpts.JSONSignature, "json-signature", "s", false, "sign the manifest with a random key")
+	putManifestCmd.Flags().StringVarP(&putManifestOpts.MediaType, "content-type", "t", "application/vnd.docker.distribution.manifest.v1+json", "use the specified media type to upload the manifest")
 }

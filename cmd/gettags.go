@@ -15,23 +15,94 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/tomnomnom/linkheader"
+
+	"github.com/dmage/boater/pkg/client"
 )
+
+type limitedReader struct {
+	r io.Reader
+	n int64
+}
+
+var errResponseTooLarge = fmt.Errorf("response too large")
+
+func (l *limitedReader) Read(p []byte) (n int, err error) {
+	if l.n <= 0 {
+		return 0, errResponseTooLarge
+	}
+	if int64(len(p)) > l.n {
+		p = p[0:l.n]
+	}
+	n, err = l.r.Read(p)
+	l.n -= int64(n)
+	return
+}
+
+func getTags(c *client.Client, url string) ([]string, string, error) {
+	req, _ := http.NewRequest("GET", url, nil)
+	resp, err := c.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("unexpected response from registry: %s", resp.Status)
+	}
+
+	buf, err := ioutil.ReadAll(&limitedReader{
+		r: resp.Body,
+		n: 20 << 20, // 20 megabytes
+	})
+	if err != nil {
+		return nil, "", err
+	}
+
+	if rootCmdVerbose {
+		log.Println(string(buf))
+	}
+
+	var response struct {
+		Name string   `json:"name"`
+		Tags []string `json:"tags"`
+	}
+	err = json.Unmarshal(buf, &response)
+	if err != nil {
+		return nil, "", err
+	}
+
+	links := linkheader.ParseMultiple(resp.Header.Values("Link"))
+	nextLink := ""
+	for _, link := range links {
+		if link.Rel == "next" {
+			nextLink = link.URL
+			break
+		}
+	}
+
+	return response.Tags, nextLink, nil
+}
 
 var getTagsCmd = &cobra.Command{
 	Use:   "get-tags <repository>",
 	Short: "List tags in a repository",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `List tags in a repository.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Examples:
+  # List tags in the repository busybox.
+  boater get-tags busybox
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			cmd.Usage()
@@ -40,16 +111,33 @@ to quickly create a Cobra application.`,
 
 		c := newClient(args[0], []string{"pull"})
 
-		req, _ := http.NewRequest("GET", c.URL("/v2/%s/tags/list", c.Scope()), nil)
-		resp, err := c.Do(req)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer resp.Body.Close()
+		allTags := []string{}
+		tagsURL := c.URL("/v2/%s/tags/list", c.Scope())
+		for {
+			tags, nextURL, err := getTags(c, tagsURL)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		_, err = io.Copy(os.Stdout, resp.Body)
-		if err != nil {
-			log.Fatal(err)
+			allTags = append(allTags, tags...)
+			if nextURL == "" {
+				break
+			}
+
+			base, err := url.Parse(tagsURL)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			ref, err := url.Parse(nextURL)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			tagsURL = base.ResolveReference(ref).String()
+		}
+		for _, tag := range allTags {
+			fmt.Printf("%s\n", tag)
 		}
 	},
 }
