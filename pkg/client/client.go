@@ -124,11 +124,14 @@ func (c *Client) auth(creds auth.CredentialStore, scope string, actions ...strin
 		return fmt.Errorf("add response to challenge manager: %s", err)
 	}
 
-	authorizer := auth.NewAuthorizer(
-		manager,
+	handlers := []auth.AuthenticationHandler{
 		auth.NewTokenHandler(c.transport, creds, scope, actions...),
-	)
+	}
+	if creds != nil {
+		handlers = append(handlers, auth.NewBasicHandler(creds))
+	}
 
+	authorizer := auth.NewAuthorizer(manager, handlers...)
 	rt := transport.NewTransport(c.transport, authorizer)
 	c.httpClient.Transport = rt
 	return nil
