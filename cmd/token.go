@@ -101,11 +101,14 @@ Examples:
 			log.Fatal(err)
 		}
 
-		password, havePassword := getPassword()
-		if rootCmdUser != "" || havePassword {
-			userpass := fmt.Sprintf("%s:%s", rootCmdUser, password)
-			token := base64.StdEncoding.EncodeToString([]byte(userpass))
-			req.Header.Add("Authorization", "Basic "+token)
+		credStore := newCredentialStore(host + "/dummy")
+		if credStore != nil {
+			username, password := credStore.Basic(nil)
+			if username != "" || password != "" {
+				userpass := fmt.Sprintf("%s:%s", username, password)
+				token := base64.StdEncoding.EncodeToString([]byte(userpass))
+				req.Header.Add("Authorization", "Basic "+token)
+			}
 		}
 
 		resp, err = httpClient.Do(req)
