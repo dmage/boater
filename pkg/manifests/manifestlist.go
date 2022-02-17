@@ -62,8 +62,8 @@ func (ml ManifestList) Dump(prefix string, repoName string) {
 	printer.KeyValueln(prefix, "mediaType", ml.MediaType)
 	printer.Keyln(prefix, "manifests")
 	for _, md := range ml.Manifests {
-		printer.Delim(prefix + "  ")
+		printer.Delim(prefix + "- ")
 		printer.Referencef("%s@%s\n", repoName, md.Digest)
-		md.Dump(prefix + "    ")
+		md.Dump(prefix + "  ")
 	}
 }
