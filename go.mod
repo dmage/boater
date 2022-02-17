@@ -6,6 +6,8 @@ require (
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7
+	github.com/fatih/color v1.7.0
+	github.com/opencontainers/go-digest v1.0.0-rc1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80

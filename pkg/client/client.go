@@ -180,3 +180,11 @@ func (c *Client) GetManifest(name string, opts GetManifestOptions) (*http.Respon
 	}
 	return c.Do(req)
 }
+
+func (c *Client) GetBlob(name string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", c.URL("/v2/%s/blobs/%s", c.Scope(), name), nil)
+	if err != nil {
+		return nil, err
+	}
+	return c.Do(req)
+}
