@@ -14,18 +14,20 @@ import (
 )
 
 type GetManifestOptions struct {
-	AcceptKnown        bool
-	AcceptSchema1      bool
-	AcceptSchema2      bool
-	AcceptManifestList bool
-	AcceptOCISchema    bool
-	AcceptOCIIndex     bool
-	MediaTypes         []string
+	AcceptKnown         bool
+	AcceptSchema1       bool
+	AcceptSchema1Signed bool
+	AcceptSchema2       bool
+	AcceptManifestList  bool
+	AcceptOCISchema     bool
+	AcceptOCIIndex      bool
+	MediaTypes          []string
 }
 
 func (o *GetManifestOptions) AddToFlagSet(fs *flag.FlagSet) {
 	fs.BoolVarP(&o.AcceptKnown, "accept-known", "a", o.AcceptKnown, "accept all known manifest types (as new types may be added in the future, this option does not guarantee backward compatibility)")
 	fs.BoolVar(&o.AcceptSchema1, "accept-schema1", o.AcceptSchema1, "accept Schema 1 manifests (application/vnd.docker.distribution.manifest.v1+json)")
+	fs.BoolVar(&o.AcceptSchema1Signed, "accept-schema1-signed", o.AcceptSchema1Signed, "accept signed Schema 1 manifests (application/vnd.docker.distribution.manifest.v1+prettyjws)")
 	fs.BoolVar(&o.AcceptSchema2, "accept-schema2", o.AcceptSchema2, "accept Schema 2 manifests (application/vnd.docker.distribution.manifest.v2+json)")
 	fs.BoolVar(&o.AcceptManifestList, "accept-manifest-list", o.AcceptManifestList, "accept manifest lists (application/vnd.docker.distribution.manifest.list.v2+json)")
 	fs.BoolVar(&o.AcceptOCISchema, "accept-ocischema", o.AcceptOCISchema, "accept OCI image manifests (application/vnd.oci.image.manifest.v1+json)")
@@ -162,6 +164,9 @@ func (c *Client) GetManifest(name string, opts GetManifestOptions) (*http.Respon
 	}
 	if opts.AcceptKnown || opts.AcceptSchema1 {
 		req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.v1+json")
+	}
+	if opts.AcceptKnown || opts.AcceptSchema1Signed {
+		req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.v1+prettyjws")
 	}
 	if opts.AcceptKnown || opts.AcceptSchema2 {
 		req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.v2+json")
