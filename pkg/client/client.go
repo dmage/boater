@@ -119,6 +119,9 @@ func (c *Client) auth(creds auth.CredentialStore, scope string, actions ...strin
 	if err != nil {
 		return fmt.Errorf("get challenges from /v2/: %s", err)
 	}
+	if resp.StatusCode >= http.StatusInternalServerError {
+		return fmt.Errorf("server responded with error: %d", resp.StatusCode)
+	}
 	defer resp.Body.Close()
 
 	manager := challenge.NewSimpleManager()
