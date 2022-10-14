@@ -74,7 +74,8 @@ Examples:
 		manifestType := resp.Header.Get("Content-Type")
 		contentDigest := resp.Header.Get("Docker-Content-Digest")
 		switch manifestType {
-		case "application/vnd.docker.distribution.manifest.v1+json":
+		case "application/vnd.docker.distribution.manifest.v1+json",
+			"application/vnd.docker.distribution.manifest.v1+prettyjws":
 			var manifest manifests.Schema1
 			err = json.NewDecoder(resp.Body).Decode(&manifest)
 			if err != nil {
