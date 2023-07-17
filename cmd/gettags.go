@@ -111,7 +111,6 @@ Examples:
 
 		c := newClient(args[0], []string{"pull"})
 
-		allTags := []string{}
 		tagsURL := c.URL("/v2/%s/tags/list", c.Scope())
 		for {
 			tags, nextURL, err := getTags(c, tagsURL)
@@ -119,7 +118,10 @@ Examples:
 				log.Fatal(err)
 			}
 
-			allTags = append(allTags, tags...)
+			for _, tag := range tags {
+				fmt.Printf("%s\n", tag)
+			}
+
 			if nextURL == "" {
 				break
 			}
@@ -135,9 +137,6 @@ Examples:
 			}
 
 			tagsURL = base.ResolveReference(ref).String()
-		}
-		for _, tag := range allTags {
-			fmt.Printf("%s\n", tag)
 		}
 	},
 }
