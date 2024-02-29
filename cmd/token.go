@@ -122,14 +122,19 @@ Examples:
 		}
 
 		var v struct {
-			Token string
+			Token       string `json:"token"`
+			AccessToken string `json:"access_token"`
 		}
 		err = json.NewDecoder(resp.Body).Decode(&v)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println(v.Token)
+		token := v.Token
+		if token == "" {
+			token = v.AccessToken
+		}
+		fmt.Println(token)
 	},
 }
 
